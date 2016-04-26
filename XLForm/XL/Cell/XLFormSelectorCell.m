@@ -192,9 +192,9 @@
             XLFormOptionsViewController * optionsViewController = [[XLFormOptionsViewController alloc] initWithStyle:UITableViewStyleGrouped titleHeaderSection:nil titleFooterSection:nil];
             optionsViewController.rowDescriptor = self.rowDescriptor;
             optionsViewController.title = self.rowDescriptor.selectorTitle;
-			
-			if ([self.rowDescriptor.rowType isEqualToString:XLFormRowDescriptorTypeSelectorPopover]) {
-				self.popoverController = [[UIPopoverController alloc] initWithContentViewController:optionsViewController];
+            
+            if ([self.rowDescriptor.rowType isEqualToString:XLFormRowDescriptorTypeSelectorPopover]) {
+                self.popoverController = [[UIPopoverController alloc] initWithContentViewController:optionsViewController];
                 self.popoverController.delegate = self;
                 optionsViewController.popoverController = self.popoverController;
                 if (self.detailTextLabel.window){
@@ -204,15 +204,21 @@
                     [self.popoverController presentPopoverFromRect:CGRectMake(0, 0, self.frame.size.width, self.frame.size.height) inView:self permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
                 }
                 [controller.tableView deselectRowAtIndexPath:[controller.tableView indexPathForCell:self] animated:YES];
-			} else {
-				[controller.navigationController pushViewController:optionsViewController animated:YES];
-			}
+            } else {
+                [controller.navigationController pushViewController:optionsViewController animated:YES];
+            }
         }
     }
     else if ([self.rowDescriptor.rowType isEqualToString:XLFormRowDescriptorTypeMultipleSelector] || [self.rowDescriptor.rowType isEqualToString:XLFormRowDescriptorTypeMultipleSelectorPopover])
     {
         NSAssert(self.rowDescriptor.selectorOptions, @"selectorOptions property shopuld not be nil");
-        XLFormOptionsViewController * optionsViewController = [[XLFormOptionsViewController alloc] initWithStyle:UITableViewStyleGrouped titleHeaderSection:nil titleFooterSection:nil];
+        UIViewController * controllerToPresent = nil;
+        XLFormOptionsViewController * optionsViewController = nil;
+        if ((controllerToPresent = [self controllerToPresent])){
+            optionsViewController = (XLFormOptionsViewController *)controllerToPresent;
+        } else {
+            optionsViewController = [[XLFormOptionsViewController alloc] initWithStyle:UITableViewStyleGrouped titleHeaderSection:nil titleFooterSection:nil];
+        }
         optionsViewController.rowDescriptor = self.rowDescriptor;
         optionsViewController.title = self.rowDescriptor.selectorTitle;
         
@@ -248,26 +254,22 @@
         [actionSheet showInView:controller.view];
 #else
         if ([UIAlertController class]) {
-            XLFormViewController * formViewController = self.formViewController;
             UIAlertController * alertController = [UIAlertController alertControllerWithTitle:self.rowDescriptor.selectorTitle
                                                                                       message:nil
                                                                                preferredStyle:UIAlertControllerStyleActionSheet];
             [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Cancel", nil)
                                                                 style:UIAlertActionStyleCancel
                                                               handler:nil]];
-            alertController.popoverPresentationController.sourceView = formViewController.tableView;
-            UIView* v = (self.detailTextLabel ?: self.textLabel) ?: self.contentView;
-            alertController.popoverPresentationController.sourceRect = [formViewController.tableView convertRect:v.frame fromView:self];
             __weak __typeof(self)weakSelf = self;
             for (id option in self.rowDescriptor.selectorOptions) {
                 [alertController addAction:[UIAlertAction actionWithTitle:[option displayText]
                                                                     style:UIAlertActionStyleDefault
                                                                   handler:^(UIAlertAction *action) {
                                                                       [weakSelf.rowDescriptor setValue:option];
-                                                                      [formViewController.tableView reloadData];
+                                                                      [weakSelf.formViewController.tableView reloadData];
                                                                   }]];
             }
-            [formViewController presentViewController:alertController animated:YES completion:nil];
+            [self.formViewController presentViewController:alertController animated:YES completion:nil];
         }
         else{
             UIActionSheet * actionSheet = [[UIActionSheet alloc] initWithTitle:self.rowDescriptor.selectorTitle
@@ -286,7 +288,7 @@
         [controller.tableView deselectRowAtIndexPath:[controller.form indexPathOfFormRow:self.rowDescriptor] animated:YES];
     }
     else if ([self.rowDescriptor.rowType isEqualToString:XLFormRowDescriptorTypeSelectorAlertView]){
-
+        
 #if __IPHONE_OS_VERSION_MAX_ALLOWED < 80000
         UIAlertView * alertView = [[UIAlertView alloc] initWithTitle:self.rowDescriptor.selectorTitle
                                                              message:nil
@@ -317,7 +319,7 @@
                                                                 style:UIAlertActionStyleCancel
                                                               handler:nil]];
             [controller presentViewController:alertController animated:YES completion:nil];
-
+            
         }
         else{
             UIAlertView * alertView = [[UIAlertView alloc] initWithTitle:self.rowDescriptor.selectorTitle
@@ -339,6 +341,7 @@
         [controller.tableView selectRowAtIndexPath:nil animated:YES scrollPosition:UITableViewScrollPositionNone];
     }
 }
+
 
 -(void)highlight
 {
